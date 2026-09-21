@@ -2,7 +2,7 @@
 
 **A scroll-driven interactive essay on the Databricks business model.**
 
-Best experienced on a desktop browser.
+Live: **https://arjunadelaide.github.io/databricks-decomposed/**. Best experienced on a desktop browser.
 
 ## The argument
 
