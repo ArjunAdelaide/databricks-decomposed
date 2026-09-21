@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Databricks, Decomposed</title>
+<meta name="description" content="How one company turned a single copy of your data into three compounding businesses.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0C;
+    --ink:#EDEDE8;
+    --muted:rgba(237,237,232,.55);
+    --dim:rgba(237,237,232,.34);
+    --faint:rgba(237,237,232,.13);
+    --accent:#FF3621;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-snap-type:y proximity;scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    font-weight:400;line-height:1.6;-webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--accent);color:#0A0A0C}
+
+  section{
+    min-height:100svh;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    scroll-snap-align:start;
+    padding:clamp(72px,10vh,120px) clamp(20px,6vw,80px);
+  }
+  .wrap{max-width:1160px;width:100%;position:relative;z-index:2}
+
+  /* type */
+  .kicker{
+    font-size:11px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:22px;
+  }
+  .kicker .n{color:var(--accent)}
+  h1{
+    font-size:clamp(44px,7vw,96px);font-weight:700;line-height:1.02;
+    letter-spacing:-.03em;
+  }
+  h2{
+    font-size:clamp(32px,5vw,68px);font-weight:700;line-height:1.06;
+    letter-spacing:-.025em;margin-bottom:26px;
+  }
+  h2 .a{color:var(--accent)}
+  .lede{font-size:clamp(16px,1.6vw,20px);color:var(--muted);max-width:56ch}
+  .lede strong{color:var(--ink);font-weight:500}
+  p.body{font-size:clamp(15px,1.4vw,17px);color:var(--muted);max-width:60ch;margin-top:14px}
+  p.body strong{color:var(--ink);font-weight:500}
+  .num,.stat{font-variant-numeric:tabular-nums}
+  .src{
+    font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--dim);margin-top:16px;line-height:1.7;
+  }
+  .est{color:var(--accent);opacity:.85}
+
+  /* reveal motion */
+  .rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;transition-delay:var(--d,0s)}
+  .in-view .rv{opacity:1;transform:none}
+  svg .draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1) .25s}
+  .in-view svg .draw{stroke-dashoffset:0}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .rv{opacity:1;transform:none;transition:none}
+    svg .draw{stroke-dashoffset:0!important;transition:none}
+    .chev{animation:none!important}
+  }
+
+  /* top bar (hero only) */
+  .topbar{
+    position:absolute;top:0;left:0;right:0;z-index:5;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:26px clamp(20px,6vw,80px);
+  }
+  .wordmark{font-size:12px;font-weight:700;letter-spacing:.28em;text-transform:uppercase}
+  .wordmark span{color:var(--accent)}
+  .topnav{display:flex;gap:28px}
+  .topnav a{
+    font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--muted);text-decoration:none;transition:color .25s;
+  }
+  .topnav a:hover{color:var(--accent)}
+
+  /* ghost button */
+  .ghost{
+    display:inline-block;margin-top:38px;padding:15px 34px;
+    border:1.5px solid var(--ink);border-radius:0;background:transparent;
+    color:var(--ink);font-family:inherit;font-size:11px;font-weight:500;
+    letter-spacing:.26em;text-transform:uppercase;cursor:pointer;
+    text-decoration:none;transition:background .25s,color .25s;
+  }
+  .ghost:hover{background:var(--ink);color:var(--bg)}
+
+  /* chevron cue */
+  .chev{
+    position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+    z-index:5;cursor:pointer;animation:bounce 2.2s infinite;background:none;border:none;padding:8px;
+  }
+  @keyframes bounce{
+    0%,20%,50%,80%,100%{transform:translate(-50%,0)}
+    40%{transform:translate(-50%,9px)}
+    60%{transform:translate(-50%,5px)}
+  }
+
+  /* dot rail */
+  .rail{
+    position:fixed;right:18px;top:50%;transform:translateY(-50%);
+    z-index:10;display:flex;flex-direction:column;gap:14px;
+  }
+  .rail a{
+    position:relative;width:7px;height:7px;border-radius:50%;
+    background:var(--dim);display:block;transition:background .3s,transform .3s;
+  }
+  .rail a:hover{background:var(--ink)}
+  .rail a.on{background:var(--accent);transform:scale(1.35)}
+  .rail a .lbl{
+    position:absolute;right:20px;top:50%;transform:translateY(-50%);
+    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .rail a:hover .lbl{opacity:1}
+
+  /* hero */
+  #hero{text-align:center}
+  #hero .sub{margin:26px auto 0;font-size:clamp(16px,1.7vw,21px);color:var(--muted);max-width:46ch}
+  .hero-art{
+    position:absolute;inset:0;z-index:1;opacity:.5;pointer-events:none;
+  }
+  .hero-art svg{width:100%;height:100%}
+
+  /* diagrams */
+  .dg{width:100%;height:auto;display:block}
+  .dg text{
+    font-family:"DM Sans",system-ui,sans-serif;font-size:10.5px;font-weight:500;
+    letter-spacing:.18em;fill:var(--muted);
+  }
+  .dg .tick{font-size:10px;fill:var(--dim);letter-spacing:.1em}
+  .dg .big{font-size:30px;font-weight:700;letter-spacing:-.02em;fill:var(--accent)}
+  .dg .ln{stroke:var(--faint);stroke-width:1;fill:none}
+  .dg .ln2{stroke:rgba(237,237,232,.4);stroke-width:1.5;fill:none}
+  .dg .ac{stroke:var(--accent);stroke-width:1.5;fill:none}
+  .dg .acfill{fill:var(--accent)}
+  .dg .box{fill:none;stroke:rgba(237,237,232,.35);stroke-width:1}
+
+  /* two-col layouts */
+  .cols{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,5vw,72px);align-items:center}
+  .cols.rev{grid-template-columns:.95fr 1.05fr}
+
+  /* thesis */
+  .bigstat{margin-top:8px}
+  .bigstat .v{
+    font-size:clamp(60px,8vw,120px);font-weight:700;letter-spacing:-.035em;
+    line-height:1;color:var(--accent);font-variant-numeric:tabular-nums;
+  }
+  .bigstat .cap{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:10px}
+
+  /* flywheel */
+  .fw-caps{display:flex;flex-direction:column;gap:4px}
+  .fw-cap{
+    padding:13px 16px;border-left:1px solid var(--faint);cursor:pointer;
+    transition:border-color .3s,background .3s;
+  }
+  .fw-cap h4{
+    font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--muted);transition:color .3s;
+  }
+  .fw-cap p{font-size:13.5px;color:var(--dim);margin-top:5px;max-height:0;overflow:hidden;transition:max-height .45s ease,margin .3s}
+  .fw-cap.on{border-left-color:var(--accent);background:rgba(255,54,33,.04)}
+  .fw-cap.on h4{color:var(--ink)}
+  .fw-cap.on h4 .idx{color:var(--accent)}
+  .fw-cap.on p{max-height:130px}
+  .fw-node circle{fill:var(--bg);stroke:rgba(237,237,232,.35);stroke-width:1;transition:stroke .3s}
+  .fw-node text{transition:fill .3s}
+  .fw-node .nn{font-size:13px;font-weight:700;fill:var(--muted);letter-spacing:0}
+  .fw-node.on circle{stroke:var(--accent);stroke-width:1.5}
+  .fw-node.on .nn{fill:var(--accent)}
+  .fw-node.on .nl{fill:var(--ink)}
+
+  /* databox */
+  .databox{
+    display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--faint);margin-top:34px;
+  }
+  .cell{padding:22px 24px;border-right:1px solid var(--faint);border-bottom:1px solid var(--faint)}
+  .cell:nth-child(2n){border-right:none}
+  .cell:nth-last-child(-n+2){border-bottom:none}
+  .cell .v{font-size:clamp(26px,2.6vw,38px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .cell .v em{font-style:normal;color:var(--accent)}
+  .cell .k{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  .cell .s{font-size:10px;letter-spacing:.08em;color:var(--dim);margin-top:4px;text-transform:uppercase}
+
+  .endnote{
+    margin-top:30px;padding-left:18px;border-left:1px solid var(--accent);
+    font-size:14px;color:var(--muted);max-width:56ch;
+  }
+  .endnote strong{color:var(--ink);font-weight:500}
+
+  /* business model grid */
+  .bm{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-top:34px}
+  .bm .cell2{border:1px solid var(--faint);padding:22px 26px}
+  .bm .cell2 h4{
+    font-size:11px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--accent);
+  }
+  .bm .cell2 h3{font-size:clamp(17px,1.7vw,22px);font-weight:700;letter-spacing:-.015em;margin:8px 0 6px}
+  .bm .cell2 p{font-size:13.5px;color:var(--muted)}
+
+  /* huge insight */
+  .insight{
+    font-size:clamp(26px,3.6vw,48px);font-weight:700;line-height:1.12;letter-spacing:-.025em;
+    max-width:24ch;margin-top:28px;
+  }
+  .insight .a{color:var(--accent)}
+
+  /* compound columns */
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:30px 0 34px}
+  .three .col{border:1px solid var(--faint);padding:26px 24px}
+  .three .col .cn{font-size:11px;font-weight:500;letter-spacing:.26em;color:var(--accent);text-transform:uppercase}
+  .three .col h3{font-size:clamp(19px,1.9vw,25px);font-weight:700;letter-spacing:-.015em;margin:12px 0 10px}
+  .three .col p{font-size:13.5px;color:var(--muted)}
+
+  /* numbers grid */
+  .numgrid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--faint);margin:36px 0}
+  .numgrid .cell{border-right:1px solid var(--faint);border-bottom:1px solid var(--faint)}
+  .numgrid .cell:nth-child(3n){border-right:none}
+  .numgrid .cell:nth-last-child(-n+3){border-bottom:none}
+  .numgrid .cell:nth-child(2n){border-right:1px solid var(--faint)}
+
+  /* mix bar */
+  .mix{margin-top:40px}
+  .mixbar{display:flex;height:34px;gap:2px}
+  .mixbar .seg{position:relative}
+  .mixbar .s1{background:var(--accent)}
+  .mixbar .s2{background:rgba(237,237,232,.36)}
+  .mixbar .s3{background:rgba(237,237,232,.12)}
+  .mixkeys{display:flex;gap:2px;margin-top:10px}
+  .mixkeys .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);line-height:1.65}
+  .mixkeys .k b{display:block;color:var(--ink);font-weight:500}
+
+  /* closing */
+  #end{text-align:center}
+  #end .quiet{font-size:clamp(17px,1.8vw,22px);color:var(--muted)}
+  #end .take{
+    font-size:clamp(28px,4vw,52px);font-weight:700;letter-spacing:-.025em;line-height:1.15;
+    max-width:24ch;margin:26px auto 0;
+  }
+  #end .take .a{color:var(--accent)}
+  footer{
+    margin-top:70px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--dim);line-height:2.1;max-width:900px;margin-left:auto;margin-right:auto;
+  }
+
+  /* responsive */
+  @media (max-width:880px){
+    html{scroll-snap-type:y proximity}
+    section{min-height:auto;padding:84px 22px}
+    .cols,.cols.rev{grid-template-columns:1fr;gap:34px}
+    .three{grid-template-columns:1fr}
+    .bm{grid-template-columns:1fr}
+    .numgrid{grid-template-columns:1fr 1fr}
+    .numgrid .cell{border-right:1px solid var(--faint)}
+    .numgrid .cell:nth-child(2n){border-right:none}
+    .topnav{display:none}
+    .rail{right:8px;gap:11px}
+    .rail a{width:6px;height:6px}
+    .hero-art{display:none}
+    .mixkeys{flex-direction:column;gap:6px}
+    .mixkeys .k{width:auto!important}
+  }
+  @media (max-height:700px){html{scroll-snap-type:y proximity}}
+</style>
+</head>
+<body>
+
+<!-- dot rail -->
+<nav class="rail" aria-label="Chapters">
+  <a href="#hero" data-s="0"><span class="lbl">Start</span></a>
+  <a href="#thesis" data-s="1"><span class="lbl">The thesis</span></a>
+  <a href="#model" data-s="2"><span class="lbl">The business model</span></a>
+  <a href="#flywheel" data-s="3"><span class="lbl">The flywheel</span></a>
+  <a href="#platform" data-s="3"><span class="lbl">01 · Platform</span></a>
+  <a href="#sql" data-s="4"><span class="lbl">02 · SQL</span></a>
+  <a href="#ai" data-s="5"><span class="lbl">03 · AI</span></a>
+  <a href="#compound" data-s="6"><span class="lbl">Compounding</span></a>
+  <a href="#numbers" data-s="7"><span class="lbl">The numbers</span></a>
+  <a href="#end" data-s="8"><span class="lbl">End</span></a>
+</nav>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="topbar">
+    <div class="wordmark">Databricks <span>/</span> Decomposed</div>
+    <nav class="topnav">
+      <a href="#platform">Platform</a>
+      <a href="#sql">SQL</a>
+      <a href="#ai">AI</a>
+      <a href="#numbers">The Numbers</a>
+    </nav>
+  </div>
+
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 1600 900" fill="none" preserveAspectRatio="xMidYMid meet">
+      <g stroke="rgba(237,237,232,.45)" stroke-width="1" fill="none">
+        <!-- left: the data lake, an actual lake -->
+        <ellipse class="draw" pathLength="1" cx="200" cy="320" rx="140" ry="48"/>
+        <path class="draw" pathLength="1" d="M110,310 q 16,-8 32,0 t 32,0 t 32,0 t 32,0 t 32,0" stroke="rgba(237,237,232,.3)"/>
+        <path class="draw" pathLength="1" d="M128,328 q 16,-8 32,0 t 32,0 t 32,0 t 32,0" stroke="rgba(237,237,232,.3)"/>
+        <path class="draw" pathLength="1" d="M152,345 q 16,-8 32,0 t 32,0 t 32,0" stroke="rgba(237,237,232,.3)"/>
+        <!-- right: the data warehouse, an actual warehouse -->
+        <path class="draw" pathLength="1" d="M1300,262 L1400,212 L1500,262"/>
+        <path class="draw" pathLength="1" d="M1310,258 V385 H1490 V258"/>
+        <rect class="draw" pathLength="1" x="1378" y="330" width="44" height="55"/>
+        <path class="draw" pathLength="1" d="M1310,300 H1490" stroke="rgba(237,237,232,.25)"/>
+        <path class="draw" pathLength="1" d="M1330,385 V310 M1355,385 V310 M1445,385 V310 M1470,385 V310" stroke="rgba(237,237,232,.18)"/>
+        <!-- two streams converge -->
+        <path class="draw" pathLength="1" d="M210,370 C250,540 540,620 722,780"/>
+        <path class="draw" pathLength="1" d="M1395,388 C1370,560 1060,630 878,780"/>
+      </g>
+      <text x="200" y="238" text-anchor="middle" style="fill:rgba(237,237,232,.6);font-size:12px;font-weight:500;letter-spacing:.24em">DATA LAKE</text>
+      <text x="1400" y="186" text-anchor="middle" style="fill:rgba(237,237,232,.6);font-size:12px;font-weight:500;letter-spacing:.24em">DATA WAREHOUSE</text>
+      <!-- center: the lakehouse, a house on the water -->
+      <g stroke="#FF3621" stroke-opacity=".85" stroke-width="1" fill="none">
+        <path class="draw" pathLength="1" d="M748,732 L800,696 L852,732"/>
+        <path class="draw" pathLength="1" d="M758,728 V784 H842 V728"/>
+        <rect class="draw" pathLength="1" x="790" y="756" width="20" height="28"/>
+      </g>
+      <path class="draw" pathLength="1" d="M620,800 q 20,-9 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0" stroke="rgba(237,237,232,.4)" stroke-width="1" fill="none"/>
+      <path class="draw" pathLength="1" d="M660,814 q 20,-9 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0" stroke="rgba(237,237,232,.25)" stroke-width="1" fill="none"/>
+      <text x="1010" y="762" text-anchor="start" style="fill:rgba(237,237,232,.7);font-size:12px;font-weight:500;letter-spacing:.24em">THE LAKEHOUSE · ONE COPY</text>
+    </svg>
+  </div>
+
+  <div class="wrap">
+    <h1 class="rv">Databricks,<br>Decomposed.</h1>
+    <p class="sub rv" style="--d:.12s">How one company turned a single copy of your data into three compounding businesses.</p>
+    <a class="ghost rv" style="--d:.24s" href="#thesis">Read the breakdown</a>
+  </div>
+
+  <button class="chev" aria-label="Scroll to next section">
+    <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><path d="M1 1l10 10L21 1" stroke="#EDEDE8" stroke-opacity=".6" stroke-width="1.5"/></svg>
+  </button>
+</section>
+
+<!-- 2 · THESIS -->
+<section id="thesis">
+  <div class="wrap cols">
+    <div>
+      <div class="kicker rv">The thesis</div>
+      <h2 class="rv" style="--d:.08s">Not a warehouse company. A <span class="a">data&#8209;gravity</span> company.</h2>
+      <p class="lede rv" style="--d:.16s">Storage decoupled from compute on open table formats. From that moment, the marginal cost of pointing a new workload at data you already govern approaches <strong>zero</strong>. Every Databricks business line is a consequence of that one fact.</p>
+    </div>
+    <div>
+      <div class="bigstat rv" style="--d:.2s">
+        <div class="v"><span class="num" data-to="6.9" data-dec="1" data-prefix="$" data-suffix="B">$0.0B</span></div>
+        <div class="cap">Annualized revenue · June 2026 · growing &gt;80% YoY</div>
+      </div>
+      <svg class="dg rv" style="--d:.3s;margin-top:26px" viewBox="0 0 800 300" role="img" aria-label="Stepped line of Databricks revenue run rate milestones, 2020 to 2026">
+        <line class="ln" x1="50" y1="262" x2="770" y2="262"/>
+        <path class="ln2 draw" pathLength="1" d="M60,248 H170 V242 H280 V230 H390 V214 H500 V166 H610 V110 H660"/>
+        <path class="ac draw" pathLength="1" style="transition-delay:1.5s" d="M660,110 V44 H760"/>
+        <circle cx="60"  cy="248" r="2.5" fill="rgba(237,237,232,.5)"/>
+        <circle cx="170" cy="242" r="2.5" fill="rgba(237,237,232,.5)"/>
+        <circle cx="280" cy="230" r="2.5" fill="rgba(237,237,232,.5)"/>
+        <circle cx="390" cy="214" r="2.5" fill="rgba(237,237,232,.5)"/>
+        <circle cx="500" cy="166" r="2.5" fill="rgba(237,237,232,.5)"/>
+        <circle cx="610" cy="110" r="2.5" fill="rgba(237,237,232,.5)"/>
+        <circle cx="720" cy="44"  r="3.5" class="acfill"/>
+        <text class="tick" x="60"  y="282" text-anchor="middle">'20</text>
+        <text class="tick" x="170" y="282" text-anchor="middle">'21</text>
+        <text class="tick" x="280" y="282" text-anchor="middle">'22</text>
+        <text class="tick" x="390" y="282" text-anchor="middle">'23</text>
+        <text class="tick" x="500" y="282" text-anchor="middle">'24</text>
+        <text class="tick" x="610" y="282" text-anchor="middle">'25</text>
+        <text class="tick" x="720" y="282" text-anchor="middle">'26</text>
+        <text class="tick" x="60"  y="236" text-anchor="middle">$425M</text>
+        <text class="tick" x="390" y="202" text-anchor="middle">$1.5B</text>
+        <text class="tick" x="500" y="154" text-anchor="middle">$3B</text>
+        <text class="big" x="726" y="30" text-anchor="middle">$6.9B</text>
+      </svg>
+      <div class="src rv" style="--d:.36s">Company-reported run-rate milestones · Databricks newsroom, CNBC · June 2026</div>
+    </div>
+  </div>
+</section>
+
+<!-- 2b · THE BUSINESS MODEL -->
+<section id="model">
+  <div class="wrap">
+    <div class="kicker rv">The business model</div>
+    <h2 class="rv" style="--d:.08s">Who pays, and for what.</h2>
+    <p class="lede rv" style="--d:.14s">Strip away the product names and Databricks is a <strong>consumption business</strong>: a software layer metered by the second, sold against data that is expensive to move and cheap to build on.</p>
+    <div class="bm">
+      <div class="cell2 rv" style="--d:.18s">
+        <h4>Who pays</h4>
+        <h3>Data teams, out of the cloud budget</h3>
+        <p>The buyer is the head of data platform or the CDO, and the bill comes out of infrastructure spend, not a per-seat software line. Cost scales with how much work runs, not how many people log in. That makes the first dollar easy and the ten-millionth dollar invisible inside a budget that was growing anyway.</p>
+      </div>
+      <div class="cell2 rv" style="--d:.26s">
+        <h4>The unit</h4>
+        <h3>The DBU, burned per second</h3>
+        <p>Everything is priced in Databricks Units: a per-second unit of processing. Customers sign multi-year spend commitments, then draw them down across any product. ETL, SQL, training, and agents all burn the same currency, so a new workload needs a config change, not a new contract.</p>
+      </div>
+      <div class="cell2 rv" style="--d:.34s">
+        <h4>The margin</h4>
+        <h3>Software on rented hardware</h3>
+        <p>Classic compute runs inside the customer's own cloud account; Databricks bills only the software premium on top. Serverless and AI workloads run on infrastructure Databricks rents itself, so cost of revenue rises with GPU prices. That mix shift is the whole story behind gross margin falling from above 80% to about 74%.</p>
+      </div>
+      <div class="cell2 rv" style="--d:.42s">
+        <h4>The motion</h4>
+        <h3>Land small, expand by usage</h3>
+        <p>Land with pipelines and governance, then let consumption grow into the commitment. Renewals price off actual usage, which is how retention stays above 140%. Azure Databricks ships as a first-party Microsoft service, and AWS and GCP marketplace deals burn down cloud commitments the customer already signed, so procurement is mostly pre-cleared.</p>
+      </div>
+    </div>
+    <div class="src rv" style="--d:.48s">Margin and retention figures: Databricks newsroom, Feb 2026 · CNBC, June 2026</div>
+  </div>
+</section>
+
+<!-- 3 · FLYWHEEL -->
+<section id="flywheel">
+  <div class="wrap cols">
+    <div>
+      <div class="kicker rv">The flywheel</div>
+      <h2 class="rv" style="--d:.08s">Land the data once. Sell against it forever.</h2>
+      <div class="fw-caps rv" style="--d:.16s">
+        <div class="fw-cap" data-i="0">
+          <h4><span class="idx">01</span> · Open formats</h4>
+          <p>Delta Lake and Apache Iceberg keep data in open files the customer owns. Buying Tabular put the creators of both formats inside one company. No lock-in at the storage layer lowers the cost of saying yes.</p>
+        </div>
+        <div class="fw-cap" data-i="1">
+          <h4><span class="idx">02</span> · Data lands once</h4>
+          <p>Pipelines land raw data into governed object storage, cataloged by Unity Catalog. The switching cost is not the files. It is the permissions, lineage, and audit trail wrapped around them.</p>
+        </div>
+        <div class="fw-cap" data-i="2">
+          <h4><span class="idx">03</span> · Every workload, same copy</h4>
+          <p>ETL, SQL analytics, ML training, and agents all run against the single governed copy. Adding a workload is a configuration change, not a migration project.</p>
+        </div>
+        <div class="fw-cap" data-i="3">
+          <h4><span class="idx">04</span> · Consumption revenue</h4>
+          <p>Every workload burns DBUs, billed per second. More workloads on the same data means more revenue without a new sales cycle. Net revenue retention runs above 140%.</p>
+        </div>
+        <div class="fw-cap" data-i="4">
+          <h4><span class="idx">05</span> · R&amp;D and acquisitions</h4>
+          <p>Consumption cash funds the next engine: MosaicML for $1.3B, Tabular for a reported $1B to $2B, Neon for about $1B, Tecton in stock.</p>
+        </div>
+        <div class="fw-cap" data-i="5">
+          <h4><span class="idx">06</span> · More workloads viable</h4>
+          <p>Each acquisition bolts a new workload onto the same copy of data. The marginal customer gets more reasons to land data, and the loop closes.</p>
+        </div>
+      </div>
+    </div>
+    <div class="rv" style="--d:.2s">
+      <svg class="dg" viewBox="0 0 560 560" role="img" aria-label="Circular flywheel schematic with six stages">
+        <circle class="draw" pathLength="1" cx="280" cy="280" r="185" stroke="rgba(237,237,232,.22)" stroke-width="1" fill="none" stroke-dasharray="1"/>
+        <!-- direction arrows on ring -->
+        <path d="M436,180 l10,3 -7,8" stroke="rgba(237,237,232,.35)" stroke-width="1" fill="none"/>
+        <path d="M124,380 l-10,-3 7,-8" stroke="rgba(237,237,232,.35)" stroke-width="1" fill="none"/>
+        <g class="fw-node" data-i="0">
+          <circle cx="280" cy="95" r="24"/>
+          <text class="nn" x="280" y="100" text-anchor="middle">1</text>
+          <text class="nl" x="280" y="52" text-anchor="middle">OPEN FORMATS</text>
+        </g>
+        <g class="fw-node" data-i="1">
+          <circle cx="440" cy="187" r="24"/>
+          <text class="nn" x="440" y="192" text-anchor="middle">2</text>
+          <text class="nl" x="452" y="152" text-anchor="middle">DATA LANDS ONCE</text>
+        </g>
+        <g class="fw-node" data-i="2">
+          <circle cx="440" cy="372" r="24"/>
+          <text class="nn" x="440" y="377" text-anchor="middle">3</text>
+          <text class="nl" x="448" y="420" text-anchor="middle">SAME COPY</text>
+        </g>
+        <g class="fw-node" data-i="3">
+          <circle cx="280" cy="465" r="24"/>
+          <text class="nn" x="280" y="470" text-anchor="middle">4</text>
+          <text class="nl" x="280" y="516" text-anchor="middle">CONSUMPTION $</text>
+        </g>
+        <g class="fw-node" data-i="4">
+          <circle cx="120" cy="372" r="24"/>
+          <text class="nn" x="120" y="377" text-anchor="middle">5</text>
+          <text class="nl" x="112" y="420" text-anchor="middle">R&amp;D + M&amp;A</text>
+        </g>
+        <g class="fw-node" data-i="5">
+          <circle cx="120" cy="187" r="24"/>
+          <text class="nn" x="120" y="192" text-anchor="middle">6</text>
+          <text class="nl" x="110" y="152" text-anchor="middle">MORE WORKLOADS</text>
+        </g>
+        <text x="280" y="266" text-anchor="middle" style="fill:rgba(237,237,232,.4)">ONE LAKE</text>
+        <text x="280" y="286" text-anchor="middle" style="fill:rgba(237,237,232,.4)">OF DATA</text>
+        <path class="ln2 draw" pathLength="1" d="M236,304 q 11,-5 22,0 t 22,0 t 22,0 t 22,0" stroke="rgba(237,237,232,.3)"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · ARM ONE: PLATFORM -->
+<section id="platform">
+  <div class="wrap cols">
+    <div>
+      <div class="kicker rv"><span class="n">01</span> / Lakehouse</div>
+      <h2 class="rv" style="--d:.08s">The land&#8209;and&#8209;govern layer.</h2>
+      <p class="lede rv" style="--d:.14s">Delta Lake tables, Lakeflow pipelines, Unity Catalog governance. Priced in <strong>DBUs</strong>, billed on consumption. It runs on all three clouds, and Azure Databricks ships as a first-party Microsoft service, which puts the product inside Microsoft's own sales motion.</p>
+      <p class="body rv" style="--d:.2s">Who pays: data engineering and platform teams. The unit of consumption: compute-seconds against governed data. The margin lives in software orchestrating cloud hardware the customer already rents.</p>
+      <div class="endnote rv" style="--d:.26s"><strong>Strategic role:</strong> the low-friction landing zone. Platform revenue is not the point. The governed copy of data is the point, because it is what the other two arms monetize.</div>
+    </div>
+    <div>
+      <svg class="dg rv" style="--d:.18s" viewBox="0 0 600 330" role="img" aria-label="Medallion architecture drawn as geological strata: bronze, silver, gold layers with data rising up">
+        <path class="box draw" pathLength="1" d="M132,290 V258 q 28,-11 56,0 t 56,0 t 56,0 t 56,0 t 56,0 t 56,0 V290 Z"/>
+        <path class="box draw" pathLength="1" d="M132,196 V164 q 28,-11 56,0 t 56,0 t 56,0 t 56,0 t 56,0 t 56,0 V196 Z"/>
+        <path class="box draw" pathLength="1" d="M132,102 V70  q 28,-11 56,0 t 56,0 t 56,0 t 56,0 t 56,0 t 56,0 V102 Z"/>
+        <text x="300" y="280" text-anchor="middle">BRONZE · RAW SEDIMENT</text>
+        <text x="300" y="186" text-anchor="middle">SILVER · CLEANED</text>
+        <text x="300" y="92"  text-anchor="middle" style="fill:rgba(237,237,232,.85)">GOLD · BUSINESS-READY</text>
+        <path class="ac draw" pathLength="1" d="M300,250 V210 M295,216 L300,208 L305,216"/>
+        <path class="ac draw" pathLength="1" style="transition-delay:.7s" d="M300,156 V116 M295,122 L300,114 L305,122"/>
+        <text class="tick" x="480" y="172" style="letter-spacing:.2em">DATA FLOWS UP</text>
+        <path class="ln draw" pathLength="1" d="M140,310 H460"/>
+        <text class="tick" x="300" y="326" text-anchor="middle">UNITY CATALOG · GOVERNANCE ACROSS ALL TIERS</text>
+      </svg>
+      <div class="databox rv" style="--d:.26s">
+        <div class="cell">
+          <div class="v"><em>&gt;60%</em></div>
+          <div class="k">of the Fortune 500</div>
+          <div class="s">Databricks · Feb 2026</div>
+        </div>
+        <div class="cell">
+          <div class="v">&gt;140%</div>
+          <div class="k">Net revenue retention</div>
+          <div class="s">Databricks · Feb 2026</div>
+        </div>
+        <div class="cell">
+          <div class="v">800+</div>
+          <div class="k">Customers &gt;$1M run rate</div>
+          <div class="s">Databricks · Feb 2026</div>
+        </div>
+        <div class="cell">
+          <div class="v">~74%</div>
+          <div class="k">Gross margin, down from 80%+</div>
+          <div class="s">Reported · June 2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · ARM TWO: WAREHOUSE -->
+<section id="sql">
+  <div class="wrap">
+    <div class="kicker rv"><span class="n">02</span> / SQL</div>
+    <h2 class="rv" style="--d:.08s">The attack on Snowflake.</h2>
+    <p class="lede rv" style="--d:.14s">Databricks SQL points BI tools at the same governed copy of data instead of loading a second copy into a separate warehouse. It reached a <strong>$600M run rate by December 2024</strong>, the company projected $1B by January 2026, and Sacra estimates roughly <strong>$1.5B by mid-2026</strong>. The pitch is not a better warehouse. It is the deletion of a duplicate.</p>
+    <svg class="dg rv" style="--d:.2s;margin-top:28px;max-width:760px" viewBox="0 0 900 340" role="img" aria-label="A lake pumped into a warehouse building, collapsing into one lake with a BI dock built over it">
+      <!-- before: a lake, and a warehouse it gets pumped into -->
+      <text x="140" y="70" text-anchor="middle">LAKE</text>
+      <ellipse class="box draw" pathLength="1" cx="140" cy="130" rx="85" ry="34"/>
+      <path class="ln2 draw" pathLength="1" d="M85,122 q 12,-6 24,0 t 24,0 t 24,0 t 24,0"/>
+      <path class="ln2 draw" pathLength="1" d="M103,142 q 12,-6 24,0 t 24,0 t 24,0"/>
+      <text x="372" y="34" text-anchor="middle">WAREHOUSE</text>
+      <path class="box draw" pathLength="1" d="M300,85 L372,50 L444,85"/>
+      <path class="box draw" pathLength="1" d="M308,81 V190 H436 V81"/>
+      <rect class="box draw" pathLength="1" x="356" y="152" width="32" height="38"/>
+      <!-- the pump: a second copy of the water -->
+      <path class="ln2 draw" pathLength="1" style="stroke-dasharray:4 4" d="M226,128 H298"/>
+      <path class="ln2 draw" pathLength="1" d="M292,122 L304,128 L292,134"/>
+      <text x="262" y="234" text-anchor="middle">DUPLICATE COPY</text>
+      <text x="262" y="256" text-anchor="middle" class="tick">PUMPED OUT NIGHTLY · STORAGE + ETL + DRIFT + TWO GOVERNANCE MODELS</text>
+      <path class="ac draw" pathLength="1" style="transition-delay:1s" d="M170,230 H354"/>
+      <!-- collapse arrow -->
+      <path class="ln2 draw" pathLength="1" d="M498,130 H570 M562,124 L572,130 L562,136"/>
+      <!-- after: one lake, BI stands on a dock over it -->
+      <text x="720" y="40" text-anchor="middle" style="fill:rgba(237,237,232,.85)">ONE GOVERNED LAKE</text>
+      <ellipse class="box draw" pathLength="1" cx="720" cy="162" rx="130" ry="46"/>
+      <path class="ln2 draw" pathLength="1" d="M630,152 q 15,-7 30,0 t 30,0 t 30,0 t 30,0 t 30,0 t 30,0"/>
+      <path class="ln2 draw" pathLength="1" d="M658,176 q 15,-7 30,0 t 30,0 t 30,0 t 30,0"/>
+      <g stroke="#FF3621" stroke-width="1.2" fill="none">
+        <path class="draw" pathLength="1" d="M640,108 H800"/>
+        <path class="draw" pathLength="1" d="M660,108 V150 M700,108 V158 M740,108 V160 M780,108 V152"/>
+      </g>
+      <text x="720" y="90" text-anchor="middle" style="fill:#FF3621">SQL + BI · A DOCK ON THE LAKE</text>
+      <text x="720" y="252" text-anchor="middle" class="tick">SAME WATER · SAME CATALOG · NO SECOND COPY</text>
+    </svg>
+    <div class="src rv" style="--d:.26s">Databricks Series J release, Dec 2024 · PYMNTS, 2025 · Sacra <span class="est">estimate</span>, June 2026</div>
+    <div class="insight rv" style="--d:.3s">The cheapest warehouse is the one that <span class="a">never copies the data.</span></div>
+  </div>
+</section>
+
+<!-- 6 · ARM THREE: AI -->
+<section id="ai">
+  <div class="wrap cols rev">
+    <div>
+      <svg class="dg rv" style="--d:.18s" viewBox="0 0 600 400" role="img" aria-label="A water cycle: the lake evaporates into a model cloud, and agents rain back onto the same lake">
+        <path class="draw" pathLength="1" style="stroke-dasharray:5 5" fill="none" stroke="#FF3621" stroke-width="1"
+          d="M225,140 C202,140 190,124 195,108 C183,90 200,68 222,73 C230,48 262,40 284,54 C300,36 336,41 346,63 C370,58 388,74 386,95 C404,102 403,127 386,135 C378,140 366,142 356,140 Z"/>
+        <text x="292" y="98" text-anchor="middle" style="fill:#FF3621">MODEL / AGENT</text>
+        <text x="292" y="118" text-anchor="middle" class="tick">FORMED FROM THE LAKE</text>
+        <!-- evaporation: training data rises -->
+        <path class="ln2 draw" pathLength="1" style="stroke-dasharray:3 5" d="M225,272 V162 M219,170 L225,160 L231,170"/>
+        <text class="tick" x="208" y="216" text-anchor="end">TRAINING · EVAPORATION</text>
+        <!-- rain: agents come back down -->
+        <g stroke="#FF3621" stroke-width="1.2" fill="none">
+          <path class="draw" pathLength="1" d="M330,160 L322,192"/>
+          <path class="draw" pathLength="1" d="M356,158 L348,190"/>
+          <path class="draw" pathLength="1" d="M382,150 L374,182"/>
+        </g>
+        <text class="tick" x="400" y="216" text-anchor="start">AGENTS · RAIN BACK</text>
+        <!-- the same lake underneath -->
+        <ellipse class="box draw" pathLength="1" cx="300" cy="316" rx="180" ry="48"/>
+        <path class="ln2 draw" pathLength="1" d="M175,306 q 18,-8 36,0 t 36,0 t 36,0 t 36,0 t 36,0 t 36,0"/>
+        <path class="ln2 draw" pathLength="1" d="M210,330 q 18,-8 36,0 t 36,0 t 36,0 t 36,0 t 36,0"/>
+        <text x="300" y="390" text-anchor="middle">LAKEHOUSE · GOVERNED DATA</text>
+        <text x="300" y="256" text-anchor="middle" class="tick">MOSAIC AI · AGENT BRICKS · LAKEBASE</text>
+      </svg>
+      <div class="databox rv" style="--d:.26s">
+        <div class="cell">
+          <div class="v"><em>$1.7B</em></div>
+          <div class="k">AI revenue run rate</div>
+          <div class="s">CNBC · June 2026</div>
+        </div>
+        <div class="cell">
+          <div class="v">~25%</div>
+          <div class="k">of total revenue</div>
+          <div class="s">Derived from company figures</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="kicker rv"><span class="n">03</span> / AI</div>
+      <h2 class="rv" style="--d:.08s">The wager on agents.</h2>
+      <p class="lede rv" style="--d:.14s">MosaicML, bought for <strong>$1.3B in 2023</strong>, became Mosaic AI: training, serving, evaluation. DBRX in 2024 proved the training stack in public. Agent Bricks builds agents on the customer's own governed data. Lakebase, built from the <strong>~$1B Neon acquisition</strong>, gives those agents a transactional Postgres memory next to the lakehouse. Tecton added real-time feature serving.</p>
+      <p class="body rv" style="--d:.2s">The bet: enterprises will build agents on their own governed data, and the platform that already holds the data wins the training and inference workloads. AI products ran at <strong>$1.7B annualized in June 2026</strong>, up from $1.4B four months earlier.</p>
+      <p class="body rv" style="--d:.26s"><strong>The honest caveat:</strong> this arm is where the spend concentrates. Gross margin fell from above 80% to about 74% in a year as GPU and cloud infrastructure costs took hundreds of millions in margin dollars. Every hyperscaler sells an agent stack next to its own storage. Data gravity is a real advantage. It is not yet a proven moat against companies that own the data centers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · COMPOUNDING -->
+<section id="compound">
+  <div class="wrap">
+    <div class="kicker rv">Synthesis</div>
+    <h2 class="rv" style="--d:.08s">How the arms compound.</h2>
+    <div class="three">
+      <div class="col rv" style="--d:.12s">
+        <div class="cn">Platform</div>
+        <h3>The landing zone</h3>
+        <p>Sells first, on pipelines and governance. Low friction, small initial consumption. Its job is to make the data arrive and make it governed.</p>
+      </div>
+      <div class="col rv" style="--d:.22s">
+        <div class="cn">SQL</div>
+        <h3>The expansion engine</h3>
+        <p>Points existing BI budgets at data already landed. No migration, no second copy. This is where net revenue retention above 140% is manufactured.</p>
+      </div>
+      <div class="col rv" style="--d:.32s">
+        <div class="cn">AI</div>
+        <h3>The option on the future</h3>
+        <p>If agents run on governed enterprise data, the platform holding that data collects the training and inference bill. Expensive to build, priced like an option.</p>
+      </div>
+    </div>
+    <svg class="dg rv" style="--d:.3s;max-width:640px;margin:0 auto" viewBox="0 0 800 330" role="img" aria-label="Workload layers stacked on one lake of data, dollars flowing down and capability flowing up">
+      <rect class="box draw" x="180" y="58"  width="440" height="44"/>
+      <rect class="box draw" x="180" y="110" width="440" height="44"/>
+      <rect class="box draw" x="180" y="162" width="440" height="44"/>
+      <path class="draw" pathLength="1" fill="none" stroke="#FF3621" stroke-width="1"
+        d="M180,278 V232 q 27,-10 55,0 t 55,0 t 55,0 t 55,0 t 55,0 t 55,0 t 55,0 t 55,0 V278 Z"/>
+      <path class="draw" pathLength="1" fill="none" stroke="rgba(255,54,33,.45)" stroke-width="1" d="M240,258 q 20,-8 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0 t 40,0"/>
+      <text x="400" y="85"  text-anchor="middle">TRAINING + AGENTS · AI</text>
+      <text x="400" y="137" text-anchor="middle">SQL + BI · WAREHOUSE</text>
+      <text x="400" y="189" text-anchor="middle">ETL + GOVERNANCE · PLATFORM</text>
+      <text x="400" y="302" text-anchor="middle" style="fill:#FF3621">ONE LAKE OF DATA</text>
+      <path class="ln2 draw" pathLength="1" d="M120,66 V262 M114,254 L120,264 L126,254"/>
+      <text class="tick" x="104" y="170" text-anchor="middle" transform="rotate(-90 104 170)">CONSUMPTION $ DOWN</text>
+      <path class="ln2 draw" pathLength="1" d="M680,266 V70 M674,78 L680,68 L686,78"/>
+      <text class="tick" x="698" y="170" text-anchor="middle" transform="rotate(90 698 170)">CAPABILITY UP</text>
+    </svg>
+  </div>
+</section>
+
+<!-- 8 · THE NUMBERS -->
+<section id="numbers">
+  <div class="wrap">
+    <div class="kicker rv">The numbers</div>
+    <h2 class="rv" style="--d:.08s">Where it stands.</h2>
+    <div class="numgrid rv" style="--d:.14s">
+      <div class="cell">
+        <div class="v stat"><em style="font-style:normal;color:var(--accent)"><span class="num" data-to="6.9" data-dec="1" data-prefix="$" data-suffix="B">$0B</span></em></div>
+        <div class="k">Annualized revenue, +80% YoY</div>
+        <div class="s">CNBC · June 2026</div>
+      </div>
+      <div class="cell">
+        <div class="v stat">&gt;<span class="num" data-to="140" data-suffix="%">0%</span></div>
+        <div class="k">Net revenue retention</div>
+        <div class="s">Databricks · Feb 2026</div>
+      </div>
+      <div class="cell">
+        <div class="v stat"><span class="num" data-to="134" data-prefix="$" data-suffix="B">$0B</span></div>
+        <div class="k">Series L valuation</div>
+        <div class="s">CNBC · Dec 2025</div>
+      </div>
+      <div class="cell">
+        <div class="v stat"><span class="num" data-to="1.7" data-dec="1" data-prefix="$" data-suffix="B">$0B</span></div>
+        <div class="k">AI product run rate</div>
+        <div class="s">CNBC · June 2026</div>
+      </div>
+      <div class="cell">
+        <div class="v stat">FCF+</div>
+        <div class="k">Free cash flow positive, LTM</div>
+        <div class="s">Databricks · Feb 2026</div>
+      </div>
+      <div class="cell">
+        <div class="v stat"><span class="num" data-to="70" data-prefix="&gt;">0</span></div>
+        <div class="k">Customers &gt;$10M run rate</div>
+        <div class="s">Databricks · Feb 2026</div>
+      </div>
+    </div>
+
+    <div class="cols" style="align-items:start">
+      <div>
+        <svg class="dg rv" style="--d:.2s" viewBox="0 0 800 310" role="img" aria-label="Stepped valuation ladder from 28 billion dollars in 2021 to 134 billion in 2025">
+          <line class="ln" x1="50" y1="262" x2="780" y2="262"/>
+          <path class="ln2 draw" pathLength="1" d="M60,226 H175 V214 H290 V208 H405 V184 H520 V138 H635"/>
+          <path class="ac draw" pathLength="1" style="transition-delay:1.4s" d="M635,138 V96 H735"/>
+          <path class="draw" pathLength="1" style="transition-delay:2.2s" d="M735,96 V46 H780" stroke="rgba(237,237,232,.35)" stroke-width="1" fill="none" stroke-dasharray="4 4"/>
+          <text class="tick" x="62"  y="282">FEB '21</text>
+          <text class="tick" x="178" y="282">AUG '21</text>
+          <text class="tick" x="293" y="282">SEP '23</text>
+          <text class="tick" x="408" y="282">DEC '24</text>
+          <text class="tick" x="523" y="282">SEP '25</text>
+          <text class="tick" x="638" y="282">DEC '25</text>
+          <text class="tick" x="62"  y="216">$28B</text>
+          <text class="tick" x="178" y="204">$38B</text>
+          <text class="tick" x="293" y="198">$43B</text>
+          <text class="tick" x="408" y="174">$62B</text>
+          <text class="tick" x="523" y="128">$100B+</text>
+          <text class="big" x="660" y="84">$134B</text>
+          <text class="tick" x="778" y="36" text-anchor="end">$165B TO $175B · REPORTED TALKS</text>
+        </svg>
+        <div class="src rv" style="--d:.26s">Databricks newsroom · CNBC · The Information, June 2026 (talks unconfirmed)</div>
+        <div class="mix rv" style="--d:.3s">
+          <div class="mixbar" aria-label="Revenue mix of the 6.9 billion dollar run rate">
+            <div class="seg s1" style="width:24.6%"></div>
+            <div class="seg s2" style="width:21.7%"></div>
+            <div class="seg s3" style="width:53.7%"></div>
+          </div>
+          <div class="mixkeys">
+            <div class="k" style="width:24.6%"><b>AI · $1.7B</b>Company, Jun '26</div>
+            <div class="k" style="width:21.7%"><b>Warehousing · ~$1.5B</b>Sacra <span class="est">estimate</span></div>
+            <div class="k" style="width:53.7%"><b>Platform + other · ~$3.7B</b>Remainder of $6.9B run rate</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 class="rv" style="--d:.22s;font-size:clamp(19px,2vw,26px);font-weight:700;letter-spacing:-.015em;margin-bottom:12px">Still private. On purpose.</h3>
+        <p class="body rv" style="--d:.28s">No S-1 has been filed. In June 2026, CEO Ali Ghodsi called 2026 <strong>"a terrible year to go public"</strong> and pointed to 2027 at the earliest. The Series L, closed in February 2026 at $7B+ including roughly $2B of debt capacity, included employee tender liquidity, which removes the main internal pressure to list.</p>
+        <p class="body rv" style="--d:.34s">Why it matters: private capital is currently willing to fund the AI buildout, margin compression included, at prices public markets have not had to underwrite. Staying private lets Databricks spend through the land-grab phase without quarterly scrutiny of that 80%-to-74% margin slide. For scale: Snowflake's public market cap was about <strong>$83B</strong> when Databricks priced at $134B.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · CLOSING -->
+<section id="end">
+  <div class="wrap">
+    <p class="quiet rv">Very few people read this far. You did.</p>
+    <p class="take rv" style="--d:.14s">The warehouse was never the product. <span class="a">One copy of the data is the platform.</span></p>
+    <a class="ghost rv" style="--d:.26s" href="#hero">Back to top</a>
+    <footer class="rv" style="--d:.34s">
+      Written by Arjun Kulshrestha · Figures as of July 12, 2026 · Estimates labeled as estimates<br>
+      Sources: Databricks newsroom · CNBC · Bloomberg · The Information · Reuters · PYMNTS · Sacra (estimates)<br>
+      Best experienced on a computer
+    </footer>
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section'));
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.rail a'));
+
+  /* section in-view: reveals, draws, counters, rail */
+  var seen = new WeakSet();
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in-view');
+        if(!seen.has(e.target)){
+          seen.add(e.target);
+          e.target.querySelectorAll('.num').forEach(countUp);
+        }
+        var i = sections.indexOf(e.target);
+        dots.forEach(function(d,j){ d.classList.toggle('on', j===i); });
+        current = i;
+      }
+    });
+  },{threshold:.35});
+  sections.forEach(function(s){ io.observe(s); });
+
+  /* count-up */
+  function fmt(v,el){
+    var dec = +(el.dataset.dec||0);
+    return (el.dataset.prefix||'') + v.toFixed(dec) + (el.dataset.suffix||'');
+  }
+  function countUp(el){
+    var to = parseFloat(el.dataset.to);
+    if(reduced){ el.textContent = fmt(to,el); return; }
+    var t0 = null, dur = 1400;
+    function step(t){
+      if(!t0) t0 = t;
+      var p = Math.min((t-t0)/dur,1);
+      var e = 1 - Math.pow(1-p,3);
+      el.textContent = fmt(to*e,el);
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* keyboard nav */
+  var current = 0;
+  function go(i){
+    i = Math.max(0, Math.min(sections.length-1, i));
+    var before = window.scrollY;
+    sections[i].scrollIntoView({behavior: reduced ? 'auto' : 'smooth'});
+    if(!reduced){
+      setTimeout(function(){
+        if(Math.abs(window.scrollY - before) < 4) sections[i].scrollIntoView();
+      }, 600);
+    }
+  }
+  document.addEventListener('keydown', function(e){
+    var tag = (e.target.tagName||'').toLowerCase();
+    if(tag==='a'||tag==='button'||tag==='input'||tag==='textarea') return;
+    if(e.key==='ArrowDown'||e.key==='Enter'||e.key==='PageDown'){ e.preventDefault(); go(current+1); }
+    else if(e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); go(current-1); }
+  });
+  document.querySelector('.chev').addEventListener('click', function(){ go(current+1); });
+
+  /* flywheel cycle + hover */
+  var caps = Array.prototype.slice.call(document.querySelectorAll('.fw-cap'));
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.fw-node'));
+  var fwIdx = 0, fwTimer = null, fwHover = false;
+  function fwSet(i){
+    fwIdx = i;
+    caps.forEach(function(c){ c.classList.toggle('on', +c.dataset.i===i); });
+    nodes.forEach(function(n){ n.classList.toggle('on', +n.dataset.i===i); });
+  }
+  caps.forEach(function(c){
+    c.addEventListener('mouseenter', function(){ fwHover = true; fwSet(+c.dataset.i); });
+    c.addEventListener('mouseleave', function(){ fwHover = false; });
+    c.addEventListener('click', function(){ fwSet(+c.dataset.i); });
+  });
+  nodes.forEach(function(n){
+    n.addEventListener('mouseenter', function(){ fwHover = true; fwSet(+n.dataset.i); });
+    n.addEventListener('mouseleave', function(){ fwHover = false; });
+  });
+  var fw = document.getElementById('flywheel');
+  new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting && !fwTimer){
+        fwSet(0);
+        if(!reduced){
+          fwTimer = setInterval(function(){
+            if(!fwHover) fwSet((fwIdx+1)%caps.length);
+          }, 3200);
+        }
+      } else if(!e.isIntersecting && fwTimer){
+        clearInterval(fwTimer); fwTimer = null;
+      }
+    });
+  },{threshold:.3}).observe(fw);
+})();
+</script>
+</body>
+</html>
